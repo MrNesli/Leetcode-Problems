@@ -7,71 +7,15 @@ https://leetcode.com/problems/maximum-score-from-performing-multiplication-opera
 #include <string.h>
 #include <stdlib.h>
 #include <strings.h>
-
-// #define MAX_PERMUTATIONS 1000
-
-// int compare(const void *a, const void *b) {
-//   int a_val = *((int *) a);
-//   int b_val = *((int *) b);
-
-//   if (a_val < b_val) return -1;
-//   if (a_val == b_val) return 0;
-//   if (a_val > b_val) return 1;
-
-//   return 0;
-// }
-// (0, 0, 0, 0, 0, 0)
-// (1, 0, 0, 0, 0, 0)
-// (1, 1, 0, 0, 0, 0)
-// (1, 1, 1, 0, 0, 0)
-// (1, 1, 1, 1, 0, 0)
-// (1, 1, 1, 1, 1, 0)
-// (1, 1, 1, 1, 1, 1)
-
-// (1, 0, 0, 0, 0, 0)
-// (0, 1, 0, 0, 0, 0)
-// (0, 0, 1, 0, 0, 0)
-// (0, 0, 0, 1, 0, 0)
-// (0, 0, 0, 0, 1, 0)
-// (0, 0, 0, 0, 0, 1)
-
-// (1, 1, 0, 0, 0, 0)
-// (1, 0, 1, 0, 0, 0)
-// (1, 0, 0, 1, 0, 0)
-// (1, 0, 0, 0, 1, 0)
-// (1, 0, 0, 0, 0, 1)
-// (0, 1, 1, 0, 0, 0)
-// (0, 1, 0, 1, 0, 0)
-// (0, 1, 0, 0, 1, 0)
-// (0, 1, 0, 0, 0, 1)
-// ...
-// (0, 0, 0, 0, 1, 1)
-
-// (1, 1, 0, 0)
-// (1, 0, 1, 0)
-// (1, 0, 0, 1)
-// shift_arr()
-// (0, 1, 1, 0)
-// (0, 1, 0, 1)
-// (0, 0, 1, 1)
-
-// (1, 1, 1, 0)
-// (1, 1, 0, 1)
-// (1, 0, 1, 1)
-// (0, 1, 1, 1)
-
-// (0, 0, 0, 0, 0, 0)
+#include <stdbool.h>
 
 /*
-start + num_of_last_ops < arr_length
-
 Algorithm:
 1. Move current "last" number to the end of the array
 2. Get the next "last" number, check if it's not "start", then move it up until another "last" number
 3. If it's "start", then you need to shift the initial array's elements to the right and reset the state array to this newly shifted one
    Also, don't forget to reset current "last" number index
 4. If we can't move the "last" number to the right anymore (we've reached array's end), then we break out of the loop and return all permutations.
-
 */
 
 typedef struct Array {
@@ -89,22 +33,65 @@ void set_item(Array *arr, int index, int item);
 void set_items(Array *arr, int start_index, int end_index, int item);
 void append_item(Array *arr, int item);
 void append_array(Array2D *arr2d, Array arr);
+void remove_item_at(Array *arr, int index);
 int get_item(Array *arr, int index);
 int* get_array(Array2D *arr2d, int index);
 void swap(Array *arr, int index, int swap_index);
 int shift_arr(Array *arr, int start, int num_of_last_ops);
 void save_permutation(Array permutation, Array2D *permutations);
 Array2D get_permutations(int num_of_last_ops, int arr_length);
-// void copy(Array *from, Array *into);
 void print_arr(Array arr);
 void print_2d_arr(Array2D arr);
 void copy_arr(Array *dest, Array *src);
+void concat2d(Array2D *arr, Array2D *arr_to_concat);
+Array convert_pointer_to_arr(int *arr, int arr_length);
 
 void copy_arr(Array *dest, Array *src) {
     *dest = (Array) {0};
 
     for (int i = 0; i < src->length; i++) {
         append_item(dest, src->elems[i]);
+    }
+}
+
+Array convert_pointer_to_arr(int *arr, int arr_length) {
+    Array new_arr = {0};
+
+    for (int i = 0; i < arr_length; i++) {
+        append_item(&new_arr, *(arr + i));
+    }
+
+    return new_arr;
+}
+
+void remove_item_at(Array *arr, int index) {
+    Array new_arr = {0};
+
+    if (index > arr->length) {
+        printf("Index overflow removing item... Arr length: %d. Index: %d\n", (int) arr->length, index);
+        exit(1);
+    }
+    else if (index < 0) {
+        printf("Index underflow removing item... Arr length: %d. Index: %d\n", (int) arr->length, index);
+        exit(1);
+    }
+
+    for (int i = 0; i < index; i++) {
+        append_item(&new_arr, arr->elems[i]);
+    }
+
+    if (index + 1 < arr->length) {
+        for (int i = index + 1; i < arr->length; i++) {
+            append_item(&new_arr, arr->elems[i]);
+        }
+    }
+
+    memcpy(arr, &new_arr, sizeof(Array));
+}
+
+void concat2d(Array2D *arr, Array2D *arr_to_concat) {
+    for (int i = 0; i < arr_to_concat->length; i++) {
+        append_array(arr, arr_to_concat->elems[i]);
     }
 }
 
@@ -117,12 +104,6 @@ Array init_array(int length, int init_value) {
 
     return arr;
 }
-
-// void copy(Array *from, Array *into) {
-//     into->elems = (int *) realloc(into->elems, from->length * sizeof(int));
-
-//     memcpy(into->elems, from->elems, sizeof(int *));
-// }
 
 void set_items(Array *arr, int start_index, int end_index, int item) {
     if (start_index < 0 || end_index < 0) {
@@ -169,9 +150,6 @@ void append_item(Array *arr, int item) {
 }
 
 void append_array(Array2D *arr2d, Array arr) {
-    // TODO: Fix the thing where it copies a pointer to the array instead of the array itself
-    // Copy directly arr pointer's elements into the 2D array
-
     // Updating the length
     arr2d->length++;
 
@@ -183,10 +161,6 @@ void append_array(Array2D *arr2d, Array arr) {
 
     // Copying the array into the 2D array
     copy_arr(arr2d->elems + last_index, &arr);
-    // *(arr2d->elems + last_index) = arr;
-    // memcpy(arr2d->elems + last_index, &arr, sizeof(Array));
-
-    // print_arr(*arr2d->elems);
 }
 
 int get_item(Array *arr, int index) {
@@ -259,53 +233,33 @@ void print_2d_arr(Array2D arr) {
 }
 
 Array2D get_permutations(int num_of_last_ops, int arr_length) {
-    
     Array2D permutations = {0};
     Array state_array = init_array(arr_length, 0);
     Array initial_array;
 
+    if (num_of_last_ops == 0) {
+        append_array(&permutations, state_array);
+        return permutations;
+    }
+
     // Initializing last operations
-    // for (int i = 0; i <= num_of_last_ops; i++) {
-    //     set_item(&state_array, 0, 1);
-    // }
-    
     set_items(&state_array, 0, num_of_last_ops - 1, 1);
 
-    // print_arr(state_array);
-
     copy_arr(&initial_array, &state_array);
-
-    printf("Initial array:\n");
-    print_arr(initial_array);
-    printf("State array:\n");
-    print_arr(state_array);
-    printf("\n");
 
     int start = 0;
     int current_index = start + num_of_last_ops - 1;
     int offset = 1;
 
-    // (1, 1, 0, 0)
-    // (1, 0, 1, 0)
-    // (1, 0, 0, 1)
-    // shift_arr()
-    // (0, 1, 1, 0)
-    // (0, 1, 0, 1)
-    // (0, 0, 1, 1)
-
-    // (1, 1, 1, 0)
-    // (1, 1, 0, 1)
-    // (1, 0, 1, 1)
-    // (0, 1, 1, 1)
+    // Saving first permutation 
     save_permutation(state_array, &permutations);
-    while (start + num_of_last_ops < arr_length) {
-        // printf("Saving permutation\n");
-        // print_arr(state_array);
 
+    // Getting all possible permutations... Maybe there's a more elegant way to do this using recursion but I don't know yet how to do this
+    while (start + num_of_last_ops < arr_length) {
         if (current_index != start) {
             int index = current_index + offset;
-            // printf("Index: %d\n", index);
-            if (index < arr_length) {
+
+            if (index < arr_length && get_item(&state_array, index) != 1) {
                 swap(&state_array, index - 1, index);
                 save_permutation(state_array, &permutations);
                 offset++;
@@ -330,36 +284,132 @@ Array2D get_permutations(int num_of_last_ops, int arr_length) {
     return permutations;
 }
 
+int max(int a, int b) {
+    return (a > b) ? a : b;
+}
+
+int get_max_sum_from_perms(Array2D perms, Array numbers, Array multipliers) {
+    bool initialized = false;
+    int max_sum;
+
+    for (int i = 0; i < perms.length; i++) {
+        Array current_arr;
+        Array current_numbers;
+        copy_arr(&current_arr, perms.elems + i);
+        copy_arr(&current_numbers, &numbers);
+        int current_sum = 0;
+
+        printf("Combination %d:\n", i);
+        print_arr(current_arr);
+        print_arr(current_numbers);
+        for (int j = 0; j < multipliers.length; j++) {
+            if (get_item(&current_arr, j) == 0) {
+                // printf("First: %d * %d = %d\n", get_item(&current_numbers, 0), get_item(&multipliers, j), get_item(&current_numbers, 0) * get_item(&multipliers, j));
+
+                current_sum += (get_item(&current_numbers, 0) * get_item(&multipliers, j));
+                remove_item_at(&current_numbers, 0);
+            }
+            else if (get_item(&current_arr, j) == 1) {
+                // printf("Last: %d * %d = %d\n", get_item(&current_numbers, current_numbers.length - 1), get_item(&multipliers, j), get_item(&current_numbers, current_numbers.length - 1) * get_item(&multipliers, j));
+
+                current_sum += (get_item(&current_numbers, current_numbers.length - 1) * get_item(&multipliers, j));
+                remove_item_at(&current_numbers, current_numbers.length - 1);
+            }
+        }
+
+        printf("Sum: %d\n\n", current_sum);
+
+        if (!initialized) {
+            max_sum = current_sum;
+            initialized = true;
+        }
+        else if (current_sum > max_sum) {
+            max_sum = current_sum;
+        }
+    }
+
+    return max_sum;
+}
+
+int calc_score(int *nums, int numsSize, int *mults, int multsSize, int start, int end) {
+    // if (start > multsSize) {
+
+    // }
+
+}
+
+int maximumScore(int* nums, int numsSize, int* multipliers, int multipliersSize) {
+    // Recursive way to approach this problem.
+    // Say we want to start calculating the sum starting from the first and the last element at the same time
+    // on each recursive iteration we calculate the sum of both sides. And if I understand recursion correctly it should get through every
+    // single possible permutation there
+    // 40 % 40 = 0
+    // 40 - 1 = 39; 40 % 39 = 1
+    // score(0 + 1); score(numsSize - 1)
+    // 0, 1, 1, 1, 0
+    // (5 - 1) - (0 - 0) = 4
+    // (5 - 1) - (1 - 0) = 3
+
+    // Array numbers = convert_pointer_to_arr(nums, numsSize);
+    // Array mults = convert_pointer_to_arr(multipliers, multipliersSize);
+
+    // Array2D perms = {0};
+
+    // for (int i = 0; i <= multipliersSize; i++) {
+    //     Array2D current_perms = get_permutations(i, multipliersSize);
+    //     concat2d(&perms, &current_perms);
+    // }
+
+    // printf("Permutations: %d\n", (int) perms.length);
+
+    // // Getting the result max sum
+    // // int result = get_max_sum_from_perms(perms, numbers, mults);
+    // int result = 0;
+
+    // printf("Result: %d\n", result);
+
+    // return result;
+}
+
 int main(void)
 {
     // int n, m;
     // scanf("%d %d", &n, &m);
 
-    // int numbers[n];
-    // int multipliers[m];
+    // Array numbers = {0};
+    // Array multipliers = {0};
 
     // for (int i = 0; i < n; i++) {
-    //   scanf("%d", numbers + i);
+    //     int num;
+    //     scanf("%d", &num);
+
+    //     append_item(&numbers, num);
     // }
 
     // for (int i = 0; i < m; i++) {
-    //   scanf("%d", multipliers + i);
+    //     int num;
+    //     scanf("%d", &num);
+
+    //     append_item(&multipliers, num);
     // }
 
-    // Array test = {0};
-    // append_item(&test, 24);
-    // append_item(&test, 50);
+    // // Calculating all possible permutations
+    // Array2D perms = {0};
 
-    // Array2D test2d = {0};
-    // append_array(&test2d, &test);
-    // append_array(&test2d, &test);
-    // append_array(&test2d, &test);
+    // for (int i = 0; i <= m; i++) {
+    //     Array2D current_perms = get_permutations(i, m);
+    //     concat2d(&perms, &current_perms);
+    // }
 
-    // print_arr(test);
-    //
-    Array2D perms = get_permutations(5, 10);
+    // // Getting the result max sum
+    // int result = get_max_sum_from_perms(perms, numbers, multipliers);
 
-    print_2d_arr(perms);
+    // printf("Result: %d\n", result);
+    int numbers[148] = {830,388,289,14,-221,610,163,444,-750,-217,-235,-882,746,-907,67,-71,-990,400,-54,-114,-100,233,667,612,-812,-471,-639,-306,-95,524,-198,-520,-652,704,-697,-43,-539,-105,-160,838,499,-109,-977,975,658,-250,593,154,-777,496,747,307,-340,403,-749,-185,721,327,-851,-112,770,-14,754,-242,-220,-776,-66,348,-707,-693,9,-354,741,129,234,638,404,-408,-30,422,-234,818,-627,706,-752,-699,-773,-786,241,432,273,272,-57,878,-149,-547,491,519,870,700,476,-99,902,-878,-237,-549,445,-372,277,-486,872,-569,-687,339,653,-564,862,898,-962,306,668,-143,344,-312,108,-536,-453,-52,627,-225,-28,403,-422,367,133,970,-575,353,347,275,-876,337,594,441,-498,-875,-934,133 };
+                
+    int multipliers[98] = { -844,-363,797,480,141,733,-935,842,160,-928,787,-895,-742,-963,889,-713,-264,-400,117,163,68,-286,-810,-365,180,-690,-558,-409,290,51,-272,-454,-110,850,578,131,-913,675,817,380,410,860,-441,56,-80,-650,-474,858,269, -844,-363,797,480,141,733,-935,842,160,-928,787,-895,-742,-963,889,-713,-264,-400,117,163,68,-286,-810,-365,180,-690,-558,-409,290,51,-272,-454,-110,850,578,131,-913,675,817,380,410,860,-441,56,-80,-650,-474,858,269 };
+
+    maximumScore(numbers, 148, multipliers, 98);
 
     return 0;
 }
